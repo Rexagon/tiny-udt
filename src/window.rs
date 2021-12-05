@@ -16,13 +16,13 @@ impl<const SIZE: usize> AckWindow<SIZE> {
             head: 0,
             tail: 0,
         };
-        window.items[0].seq_no = -1;
+        window.items[0].seq_no = u32::MAX;
 
         window
     }
 
     /// Write an ACK record into the window
-    pub fn store(&mut self, seq_no: i32, data_seq_no: i32) {
+    pub fn store(&mut self, seq_no: u32, data_seq_no: u32) {
         unsafe {
             *self.items.get_unchecked_mut(self.head) = AckWindowItem {
                 timestamp: Instant::now(),
@@ -38,7 +38,7 @@ impl<const SIZE: usize> AckWindow<SIZE> {
     }
 
     /// Search the ACK-2 "seq" in the window, find out the DATA "ack" and calculate RTT
-    pub fn acknowledge(&mut self, seq_no: i32) -> Option<Acknowledgement> {
+    pub fn acknowledge(&mut self, seq_no: u32) -> Option<Acknowledgement> {
         // Head has not exceeded the physical boundary of the window
         if self.head >= self.tail {
             for i in self.tail..self.head {
@@ -75,7 +75,7 @@ impl<const SIZE: usize> AckWindow<SIZE> {
         if i + 1 == self.head {
             self.head = 0;
             self.tail = 0;
-            self.items[0].seq_no = -1;
+            self.items[0].seq_no = u32::MAX;
         } else {
             self.tail = (i + 1) % SIZE;
         }
@@ -85,7 +85,7 @@ impl<const SIZE: usize> AckWindow<SIZE> {
 #[derive(Debug, Copy, Clone)]
 pub struct Acknowledgement {
     /// The DATA ACK no. that matches the ACK-2 no.
-    pub data_seq_no: i32,
+    pub data_seq_no: u32,
     /// Round-trip delay (saturated)
     pub rtt: Duration,
 }
@@ -95,9 +95,9 @@ struct AckWindowItem {
     /// The timestamp when the ACK was sent
     timestamp: Instant,
     /// Seq. No. for the ACK packet
-    seq_no: i32,
+    seq_no: u32,
     /// Data Seq. No. carried by the ACK packet
-    data_seq_no: i32,
+    data_seq_no: u32,
 }
 
 impl AckWindowItem {
